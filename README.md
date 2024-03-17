@@ -61,7 +61,7 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 
 ## 使用例
 
-[SATySFi/lib-satysfi/dist/packages/stdjareport.satyh](https://github.com/gfngfn/SATySFi/tree/master/lib-satysfi/dist/packages/stdjareport.satyh)
+[stdjareport.satyh](https://github.com/gfngfn/SATySFi/tree/master/lib-satysfi/dist/packages/stdjareport.satyh)
 の `\figure` コマンドを改造して，top/bottom の指定ができるようにしたいとする．
 
 1. satysfi-base をインストール．
