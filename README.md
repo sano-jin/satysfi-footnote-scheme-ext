@@ -62,8 +62,6 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 [SATySFi/lib-satysfi/dist/packages/stdjareport.satyh](https://github.com/gfngfn/SATySFi/tree/master/lib-satysfi/dist/packages/stdjareport.satyh)
 の `\figure` コマンドを改造して，top/bottom の指定ができるようにしたいとする．
 
-これには，
-
 1. satysfi-base をインストール．
    ```bash
    opam install satysfi-base
@@ -74,7 +72,7 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
    [src/footnote-scheme-ext.satyh](src/footnote-scheme-ext.satyh) を手動でコピーしてきて手元に置いてやる必要がある．
 3. `stdjareport.sath` で `@require: footnote-scheme` の代わりに `@import: footnote-scheme-ext` する．
    ```
-   @import: src/footnote-scheme-ext
+   @import: footnote-scheme-ext
    ```
 4. まず `stdjareport.satyh` において，float box の position の型を定義しておく．
    ```
