@@ -119,9 +119,10 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 これらの改造を施した stdjareport.satyh が，
 [demo/stdjareport.satyh](demo/stdjareport.satyh) である．
 
-[demo/local.satyh](demo/local.satyh) は，
+[demo/local.satyh](demo/local.satyh) 及び
+[demo/satysfi-logo.jpg](demo/satysfi-logo.jpg) は，
 [SATySFi の公式デモのもの](https://github.com/gfngfn/SATySFi/blob/master/demo/local.satyh)
-をそのままコピーしてきただけ．
+をそのままコピーしてきて使っている．
 
 ## その他
 
