@@ -8,6 +8,7 @@
 @require: option
 @require: annot
 @import: ../src/footnote-scheme-ext
+% @require: footnote-scheme-ext/footnote-scheme-ext
 
 
 
