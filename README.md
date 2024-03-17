@@ -39,8 +39,10 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 - `val main-no-number : context -> (unit -> inline-boxes) -> (unit -> block-boxes) -> inline-boxes`
 - (new) `val add-float-bottom : block-boxes -> inline-boxes`
 
-であり，`add-float-bottom` が追加で新たに公開している field である
-（他の関数も内部的にはかなり色々追加の処理をしている）．
+であり，`add-float-bottom` が追加で新たに公開している field である．
+（図を footnote の最上部に配置するために，
+本来の footnote は一旦退避させておくなど，
+他の関数も内部的にはかなり色々追加の処理をしている．）
 
 ## 使い方
 
@@ -101,7 +103,9 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
            ref-float-boxes <- (pbinfo#page-number, bb-inner) :: !ref-float-boxes
          ))
    ```
-7. ユーザに `FloatPosBottom` などのように書かせるのが手間なら，Alias 用のコマンドを作っておく．
+7. ユーザに `FloatPosBottom` などのように書かせるのが手間なら，
+   [easytable](https://github.com/monaqa/satysfi-easytable) などのように
+   alias 用のコマンドを作っておく．
    例えば以下のようにすることで，
    ユーザは `open FloatPosAlias in` をすれば，
    `` \figure ?:(`label`) ?:(b) {This is a caption} <...> ``
@@ -121,8 +125,8 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 
 [demo/local.satyh](demo/local.satyh) 及び
 [demo/satysfi-logo.jpg](demo/satysfi-logo.jpg) は，
-[SATySFi の公式デモのもの](https://github.com/gfngfn/SATySFi/blob/master/demo/local.satyh)
-をそのままコピーしてきて使っている．
+[SATySFi の公式デモのもの](https://github.com/gfngfn/SATySFi/blob/master/demo)
+をそのままコピーしてきて配置している．
 
 ## その他
 
@@ -130,5 +134,6 @@ footnote-scheme.satyh の後方互換性がある（ことを意図して作っ�
 
 ## TODO
 
-satyrographos に登録する．
-ドキュメントを作る．
+- [ ] satyrographos に登録する．
+- [ ] ドキュメントを作る．
+- [ ] （需要がありそうであれば）英訳．
