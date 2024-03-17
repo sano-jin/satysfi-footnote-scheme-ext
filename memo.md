@@ -42,33 +42,43 @@ fswatch をインストール済みであれば以下のようにして使うこ
 図を footnote の最上部に配置するために，
 本来の footnote は一旦退避させておき，
 そのページの中の最後の図を挿入するタイミングで退避させた footnotes も挿入する．
+
+今回使用しているレジスタは以下の三つ．
+全てに prefix `__footnote-scheme-ext:` をつけている．
+
+- `__footnote-scheme-ext:fig-map:<figure number>` → `<page number> <footnote-num>`
+- `__footnote-scheme-ext:footnote-map:<footnote number>` → `<page number>`
+- `__footnote-scheme-ext:fig-num` → `<maximum figure number>`
+
 実装においては figure という名前にしているが，実際には float 環境を意味している．[^2]
+
+実装の詳細．
 
 - Figure には figure number と footnote number を両方振る．
 - Figure を挿入しようとするときは hook-page-break で，
   その figure を挿入しようとしたページ番号を取得し，
   その figure の番号と footnote number とともにレジスタに記録する．
-  - レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote-num>`
+  - レジスタ: `__footnote-scheme-ext:fig-map:<figure number> ----> <page number> <footnote-num>`
 - footnote を挿入しようとしているときも hook-page-break で，
   その footnote を挿入しようとしたページ番号を取得し，
   レジスタに記録する．
-  - レジスタ: `__footnote-ext:footnote-map:<footnote number> ----> <page number>`
+  - レジスタ: `__footnote-scheme-ext:footnote-map:<footnote number> ----> <page number>`
 - 冒頭でレジスタから読み出してきて以下の関数を定義する．
   - (a) figure num が与えられたときにその figure がそのページで一番最後かを判定する関数．
     `is-last-fig: <figure number> -> bool`
-    - レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote-num>` を参照する．
+    - レジスタ: `__footnote-scheme-ext:fig-map:<figure number> ----> <page number> <footnote-num>` を参照する．
     - 最初は全ての figure が自分が一番最後だと思うような実装にする．
       未定義の場合，default は常に true を返す．
   - (b) footnote num が与えられたときに，
     「これから挿入しようとしているページに figure がない，または既に全ての figure を挿入した後である」
     かを判定する関数を定義する．
     `is-no-more-fig: <footnote number> -> bool`
-    - レジスタ `__footnote-ext:footnote-map:<footnote number> ----> <page number>` を参照する．
+    - レジスタ `__footnote-scheme-ext:footnote-map:<footnote number> ----> <page number>` を参照する．
     - 最初は figure がないと思うような実装にする．
       未定義の場合，default は常に true を返す．
 - figure が与えられたとき．
   - figure-num-ref から自分の figure num を取得．
-  - この際，figure num の最大値をレジスタ `__footnote-ext:figure-num` に記録しておく．
+  - この際，figure num の最大値をレジスタ `__footnote-scheme-ext:figure-num` に記録しておく．
   - 自分自身は普通に add-footnote していく．
   - `is-last-fig` を参照して，自分が一番最後なら footenotes-ref を flash する．
   - hook-page-break を行う（前述参照）

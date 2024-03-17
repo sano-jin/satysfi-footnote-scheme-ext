@@ -56,15 +56,15 @@ end = struct
 
 
   % レジスタの key を生成する．
-  let kFIGMAP fig-num           = `__footnote-ext:fig-map:` ^ String.of-int fig-num
-  let kFIGNUM                   = `__footnote-ext:fig-num:`
-  let kFOOTNOTEMAP footnote-num = `__footnote-ext:footnote-map:` ^ String.of-int footnote-num
+  let kFIGMAP fig-num           = `__footnote-scheme-ext:fig-map:` ^ String.of-int fig-num
+  let kFIGNUM                   = `__footnote-scheme-ext:fig-num:`
+  let kFOOTNOTEMAP footnote-num = `__footnote-scheme-ext:footnote-map:` ^ String.of-int footnote-num
 
   let read-fig-num-max () =
     Int.of-string (Option.unwrap-or `0` (get-cross-reference kFIGNUM))
 
 
-  % レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote number>`
+  % レジスタ: `__footnote-scheme-ext:fig-map:<figure number> ----> <page number> <footnote number>`
   % から読み出してくる．
   % figure number が 1 から連続している前提で読み出してくる．
   % <figure number> -> (<page number>, <footnote number>)`
@@ -116,10 +116,10 @@ end = struct
       helper (List.map (fun (fign, (pn, footn)) -> (pn, (fign, footn))) fig-map)
 
 
-  % レジスタ `__footnote-ext:fig-map:` から読み込んできたデータ．
+  % レジスタ `__footnote-scheme-ext:fig-map:` から読み込んできたデータ．
   let-mutable fig-map-ref <- []
 
-  % レジスタ `__footnote-ext:fig-map:` から読み込んできたデータの逆像．
+  % レジスタ `__footnote-scheme-ext:fig-map:` から読み込んできたデータの逆像．
   let-mutable fig-map-inv-ref <- []
 
 
@@ -150,7 +150,7 @@ end = struct
   %   「これから挿入しようとしているページに figure がない，または既に全ての figure を挿入した後である」
   %   かを判定する関数を定義する．
   %   `is-no-more-fig: <footnote number> -> bool`
-  %   - レジスタ `__footnote-ext:footnote-map:<footnote number> ----> <page number>` を参照する．
+  %   - レジスタ `__footnote-scheme-ext:footnote-map:<footnote number> ----> <page number>` を参照する．
   %   - 最初は figure がないと思うような実装にする．
   %     未定義の場合，default は常に true を返す．
   let is-no-more-fig footnote-num =
@@ -207,12 +207,12 @@ end = struct
 
   % figure が与えられたとき．
   % - figure-num-ref から自分の figure num を取得．
-  % - この際，figure num の最大値をレジスタに記録しておく．
+  % - この際，figure num の最大値をレジスタ `__footnote-scheme-ext:fig-num` に記録しておく．
   % - 自分自身は普通に add-footnote していく．
   % - `is-last-fig` を参照して，自分が一番最後なら footenotes-ref を flush する．
   % - hook-page-break を行う（前述参照）
   % footnotes は () を受け取る関数のリストにしておく．
-  % レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote number>` に登録する．
+  % レジスタ: `__footnote-scheme-ext:fig-map:<figure number> ----> <page number> <footnote number>` に登録する．
   let add-footnote-fig fig-bb =
     let () = increment figure-num-ref in
     let fig-num = !figure-num-ref in
