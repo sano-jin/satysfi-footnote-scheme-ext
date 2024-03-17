@@ -1,0 +1,26 @@
+;; For Satyrographos 0.0.2 series
+(version 0.0.2)
+
+(library
+  (name "footnote-scheme-ext")
+  (version "0.0.1")
+  (sources
+    ((packageDir "src")))
+  (opam "satysfi-footnote-scheme-ext.opam")
+  (dependencies
+    (
+     (base ()))))
+
+;; (libraryDoc
+;;   (name "easytable-doc")
+;;   (version "1.1.2")
+;;   (workingDirectory "doc")
+;;   (build
+;;     ((satysfi "easytable.saty" "-o" "easytable.pdf")))
+;;   (sources
+;;     ((doc "easytable.pdf" "doc/easytable.pdf")))
+;;   (opam "satysfi-easytable-doc.opam")
+;;   (dependencies
+;;     (
+;;      (enumitem ())
+;;      (easytable ()))))

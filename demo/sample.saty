@@ -1,0 +1,32 @@
+@import: stdjareport
+@import: local
+
+open FloatPosAlias
+in
+
+document(|
+  title = { タイトル };
+  author = { 名前 };
+  show-title = true;
+  show-toc = true;
+|)'<
+  +section { 背景と課題 } <
+    +p {
+      静的型付き言語は素晴らしい．\footnote { ホゲ！ }
+      その中でも関数型言語はもっと素晴らしい．\footnote { フガ！ }
+      ただし，LaTeX は関数型言語でない．
+    }
+  >
+
+  +section { 解決案 } <
+    +p { \SATySFi; を使う．\footnote { ぴよぴよ！ } }
+    +p {
+      \SATySFi; のロゴを図\ref (`fig:logo`);に示す．
+      \figure ?:(`fig:logo`) ?:(b) { \SATySFi; のロゴ． } <
+        +image-frame { \insert-image (7cm) (`satysfi-logo.jpg`); }
+      >
+      hoge.\footnote { hoge }
+      fuga.\footnote { fuga }
+    }
+  >
+>

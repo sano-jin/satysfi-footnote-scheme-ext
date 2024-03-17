@@ -1,0 +1,28 @@
+opam-version: "2.0"
+name: "satysfi-footnote-scheme-ext"
+version: "1.1.2"
+synopsis: "A SATySFi package to have a floating boxes at the bottom of pages"
+description: """
+A SATySFi package to have a floating boxes at the bottom of pages.
+"""
+
+maintainer: "Jin Sano <sano@ueda.info.waseda.ac.jp>"
+authors: "Jin Sano <sano@ueda.info.waseda.ac.jp>"
+license: "LGPL-3.0-or-later"
+homepage: "https://github.com/sano-jin/satysfi-footnote-scheme-ext"
+bug-reports: "https://github.com/sano-jin/satysfi-footnote-scheme-ext/issues"
+dev-repo: "git+https://github.com/sano-jin/satysfi-footnote-scheme-ext.git"
+
+depends: [
+  "satysfi" {>= "0.0.5" & < "0.0.8"}
+  "satyrographos" {>= "0.0.2.6" & < "0.0.3"}
+  "satysfi-dist"
+  "satysfi-base" {>= "1.4.0" & < "2.0.0"}
+]
+build: [ ]
+install: [
+  ["satyrographos" "opam" "install"
+   "--name" "footnote-scheme-ext"
+   "--prefix" "%{prefix}%"
+   "--script" "%{build}%/Satyristes"]
+]

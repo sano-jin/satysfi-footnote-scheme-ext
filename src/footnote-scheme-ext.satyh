@@ -1,0 +1,308 @@
+@require: color
+@require: gr
+@require: base/string
+@require: base/length
+@require: base/list-ext
+@require: base/option-ext
+@require: base/string
+@require: base/tuple
+
+
+module FootnoteScheme : sig
+
+  val initialize : unit -> unit
+  val start-page : unit -> unit
+  val main : context -> (int -> inline-boxes) -> (int -> block-boxes) -> inline-boxes
+  val main-no-number : context -> (unit -> inline-boxes) -> (unit -> block-boxes) -> inline-boxes
+  val add-float-bottom : block-boxes -> inline-boxes
+
+end = struct
+
+  % footnote の番号（ラベル）．0 から順に fresh な id を作っていく．
+  let-mutable footnote-ref <- 0
+
+  % そのページで最初の footnote か否か．
+  let-mutable first-footnote <- true
+
+  let bar-ratio = 0.5
+
+
+  % ページが始まったら first-footnote は真にしておく．
+  let start-page () =
+    first-footnote <- true
+
+
+  let generate-footnote-label n =
+    `footnote:` ^ (arabic n)
+
+
+  let promote-another-trial () =
+    register-cross-reference `changed` `T`
+
+
+  % キーを指定して，連想リストから値を取得．
+  let assoc-opt key li =
+    li |> List.filter (fun (k, _) -> k == key) |> List.map Pair.snd |> List.head
+
+  let assoc key li =
+    assoc-opt key li |> Option.unwrap
+
+
+  % 文字列を空白文字で分割する．
+  let split-on-spaces =
+    let re = split-on-regexp (regexp-of-string `[ ]+`) in
+    fun str ->
+      str |> re |> List.map Pair.snd
+
+
+let read-fig-num-max () =
+  Int.of-string (Option.unwrap-or `0` (get-cross-reference `__footnote-ext:fig-num:`))
+
+
+  % レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote number>`
+  % から読み出してくる．
+  % figure number が 1 から連続している前提で読み出してくる．
+  % <figure number> -> (<page number>, <footnote number>)`
+  let read-fig-map () =
+    let fig-num-max = read-fig-num-max () in
+    let-rec read-register acc fig-num =
+      if fig-num-max < fig-num then acc
+      else
+        match get-cross-reference (`__footnote-ext:fig-map:` ^ String.of-int fig-num) with
+        | Some (pageno-footno) -> (
+           match split-on-spaces pageno-footno with
+           | [pageno; footno] ->
+               let pageno = Int.of-string pageno in
+               let footno = Int.of-string footno in
+               read-register ((fig-num, (pageno, footno)) :: acc) (fig-num + 1)
+           | _ -> acc) % error
+        | None -> acc % error
+    in
+    read-register [] 1
+
+
+  % デバッグ用のプリンタ．
+  let print-fig-map fig-map =
+    let () = display-message (`print-fig-map`) in  % for debug
+    let-rec helper fig-map =
+      match fig-map with
+      | [] -> ()
+      | (fig-num, (pageno, footno)) :: tail ->
+          let () = display-message (`  > '` ^
+              String.of-int fig-num ^ `', '`# ^
+              String.of-int pageno ^ `', '`# ^
+              String.of-int footno ^ `'`
+            ) in  % for debug
+          helper tail
+    in
+      helper fig-map
+
+
+  % Make an inverse image.
+  % <page number> -> [(<figure number>, <footnote number>)]
+  let inv-fig-map fig-map =
+    let-rec helper li =
+      match li with
+      | [] -> []
+      | (k1, v1)::tail ->
+          let (xs, ys) = List.partition (fun (k2, _) -> k1 == k2) tail in
+            (k1, v1 :: List.map Pair.snd xs) :: helper ys
+    in
+      helper (List.map (fun (fign, (pn, footn)) -> (pn, (fign, footn))) fig-map)
+
+
+  % レジスタ `__footnote-ext:fig-map:` から読み込んできたデータ．
+  let-mutable fig-map-ref <- []
+
+  % レジスタ `__footnote-ext:fig-map:` から読み込んできたデータの逆像．
+  let-mutable fig-map-inv-ref <- []
+
+
+  % fig-map の初期化も行う．
+  let initialize () =
+    let () = fig-map-ref <- read-fig-map () in
+    let () = print-fig-map !fig-map-ref in
+    let () = fig-map-inv-ref <- inv-fig-map !fig-map-ref in
+      register-cross-reference `changed` `F`
+
+
+
+  % 冒頭でレジスタから読み出してきて以下の関数を定義する．
+  % - (a) figure num が与えられたときにその figure がそのページで一番最後かを判定する関数．
+  %   `is-last-fig: <figure number> -> bool`
+  %   - 最初は全ての figure が自分が一番最後だと思うような実装にする．
+  %     未定義の場合，default は常に true を返す．
+  let is-last-fig fig-num =
+    match assoc-opt fig-num (!fig-map-ref) with
+    | None -> true
+    | Some((pageno, _)) ->
+       let (figs, _) = List.unzip (assoc pageno (!fig-map-inv-ref)) in
+       let max-fig-num = Option.unwrap-or fig-num (List.max Int.ord figs) in
+         fig-num == max-fig-num
+
+
+  % - (b) footnote num が与えられたときに，
+  %   「これから挿入しようとしているページに figure がない，または既に全ての figure を挿入した後である」
+  %   かを判定する関数を定義する．
+  %   `is-no-more-fig: <footnote number> -> bool`
+  %   - レジスタ `__footnote-ext:footnote-map:<footnote number> ----> <page number>` を参照する．
+  %   - 最初は figure がないと思うような実装にする．
+  %     未定義の場合，default は常に true を返す．
+  let is-no-more-fig footnote-num =
+    match get-cross-reference (`__footnote-ext:footnote-map:` ^ String.of-int footnote-num) with
+    | None -> true
+    | Some(pageno) ->
+        let pageno = Int.of-string pageno in
+        let (_, footnums) = List.unzip (Option.unwrap-or [] (assoc-opt pageno (!fig-map-inv-ref))) in
+        % そのページ内で最大の footnote number
+        % footnotes がまだ登録されていない場合はゼロを返すことで後続の大小比較が成功して true を返すようにする．
+        let max-foot-num = Option.unwrap-or 0 (List.max Int.ord footnums) in
+          footnote-num >= max-foot-num
+
+
+  % 元々あった，何のためなのか実は良くわからない操作．
+  let check-register label footnote-num =
+    hook-page-break (fun page _ -> (
+      % 追加
+      let () = register-cross-reference
+        (`__footnote-ext:footnote-map:` ^ String.of-int footnote-num)
+        (String.of-int page#page-number)
+      in
+      let () =
+        if !first-footnote then
+          match get-cross-reference label with
+          | Some(`T`) ->
+              ()
+
+          | _ ->
+              let () = promote-another-trial () in
+              register-cross-reference label `T`
+        else
+          match get-cross-reference label with
+          | Some(`F`) ->
+              ()
+
+          | _ ->
+              let () = promote-another-trial () in
+              register-cross-reference label `F`
+      in
+      first-footnote <- false))
+
+
+  % footnote を退避させる用のリスト．
+  % unit を受け取って footnote を返す関数のリストにする．
+  let-mutable footnotes-buf-ref <- []
+
+  % figure の番号．0 から順に fresh な id を作っていく．
+  let-mutable figure-num-ref <- 0
+
+  % footnote/figure の番号．0 から順に fresh な id を作っていく．
+  let-mutable footnote-num-ref <- 0
+
+
+  % figure が与えられたとき．
+  % - figure-num-ref から自分の figure num を取得．
+  % - この際，figure num の最大値をレジスタに記録しておく．
+  % - 自分自身は普通に add-footnote していく．
+  % - `is-last-fig` を参照して，自分が一番最後なら footenotes-ref を flush する．
+  % - hook-page-break を行う（前述参照）
+  % footnotes は () を受け取る関数のリストにしておく．
+  % レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote number>` に登録する．
+  let add-footnote-fig fig-bb =
+    let () = increment figure-num-ref in
+    let fig-num = !figure-num-ref in
+    % - figure num の最大値をレジスタに記録しておく．
+    let () =
+      read-fig-num-max () |> Int.max fig-num |> String.of-int
+        |> register-cross-reference `__footnote-ext:fig-num:`
+    in
+    let () = increment footnote-num-ref in
+    let footnote-num = !footnote-num-ref in
+    let flush-footnotes () =
+      let footnotes = List.fold-left (fun acc footnote -> footnote () ++ acc) inline-nil (!footnotes-buf-ref) in
+      let () = footnotes-buf-ref <- [] in
+      footnotes
+    in
+    no-break
+      ((add-footnote fig-bb ++ hook-page-break (fun page _ -> (
+        % レジスタに登録する．
+        register-cross-reference
+          (`__footnote-ext:fig-map:` ^ String.of-int fig-num)
+          (String.of-int (page#page-number) ^ #` `# ^ String.of-int footnote-num)
+        ))) % ++ check-register label)
+      ++ (if is-last-fig fig-num then flush-footnotes () else inline-nil))
+
+
+  % footnote が与えられたとき．
+  % - footnote-num-ref から自分の footnote num を取得．
+  % - `is-no-more-fig` を参照して，
+  %   true なら 普通に add-footnote していく．
+  %   false なら footnote-buf-ref に退避させる．
+  % - hook-page-break を行う（前述参照）
+  let add-footnote-footnote label footnote-bb ib-num =
+    let () = increment footnote-num-ref in
+    let footnote-num = !footnote-num-ref in
+    if is-no-more-fig footnote-num then
+      no-break
+        (add-footnote footnote-bb ++ ib-num ++ check-register label footnote-num)
+    else
+      let f () = no-break (add-footnote footnote-bb ++ check-register label footnote-num) in
+      let () = footnotes-buf-ref <- (f :: !footnotes-buf-ref) in
+        ib-num
+
+
+  type info =
+    | Numbered    of (int -> inline-boxes) * (int -> block-boxes) % 添字に紐づけて登録する．
+    | NonNumbered of (unit -> inline-boxes) * (unit -> block-boxes)
+
+
+  % main
+  let main-scheme ctx info =
+    let size = get-font-size ctx in
+    let (label, ib-num, bb) =
+      match info with
+      | Numbered(ibf, bbf) ->
+          let () = increment footnote-ref in
+          let num = !footnote-ref in
+          let label = generate-footnote-label num in
+          let it-num = embed-string (arabic num) in
+          let ib-num = ibf num in
+          let bb = bbf num in
+          (label, ib-num, bb)
+
+      | NonNumbered(ibk, bbk) ->
+          let ib-num = ibk () in
+          let bb = bbk () in
+          (`(non-numbered)`, ib-num, bb)
+    in
+    let bb-before =
+      match get-cross-reference label with
+      | Some(`T`) -> % このラベルが first-footnote の場合．
+          let () = display-message (`'` ^ label ^ `': T`) in  % for debug
+          let () = display-message (`>>> first-footnote: ` ^ String.of-bool !first-footnote) in
+          let bar-top-margin = size in
+          let bar-bottom-margin = size *' 0.5 in
+          let wid = get-text-width ctx *' bar-ratio in
+          let ib =
+            inline-graphics wid bar-top-margin bar-bottom-margin (fun (x, y) ->
+              [ stroke 0.5pt Color.black (Gr.line (x, y) (x +' wid, y)); ]
+            ) ++ inline-fil
+          in
+          line-break false false (ctx |> set-paragraph-margin 0pt 0pt) ib
+
+      | _ -> % このラベルが first-footnote でない場合．
+          let () = display-message (`'` ^ label ^ `': F`) in  % for debug
+          block-skip (size *' 0.5)
+    in
+      add-footnote-footnote label (bb-before +++ bb) ib-num
+
+
+  let main ctx ibf bbf =
+    main-scheme ctx (Numbered(ibf, bbf))
+
+
+  let main-no-number ctx ibk bbk =
+    main-scheme ctx (NonNumbered(ibk, bbk))
+
+  let add-float-bottom = add-footnote-fig
+end
