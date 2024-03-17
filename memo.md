@@ -80,7 +80,7 @@ fswatch をインストール済みであれば以下のようにして使うこ
   - figure-num-ref から自分の figure num を取得．
   - この際，figure num の最大値をレジスタ `__footnote-scheme-ext:figure-num` に記録しておく．
   - 自分自身は普通に add-footnote していく．
-  - `is-last-fig` を参照して，自分が一番最後なら footenotes-ref を flash する．
+  - `is-last-fig` を参照して，自分が一番最後なら footenotes-ref を flush する．
   - hook-page-break を行う（前述参照）
 - footnote が与えられたとき．
   - footnote-num-ref から自分の footnote num を取得．
