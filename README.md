@@ -1,6 +1,6 @@
 # satysfi-footnote-scheme-ext
 
-A package to allow SATySFi to have a floating boxes at the bottom of pages.
+A package to allow SATySFi to have floating boxes at the bottom of pages.
 
 [SATySFi](https://github.com/gfngfn/SATySFi) で図をページ下部に配置できるようにした．
 
