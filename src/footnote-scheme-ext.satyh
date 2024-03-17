@@ -55,8 +55,13 @@ end = struct
       str |> re |> List.map Pair.snd
 
 
-let read-fig-num-max () =
-  Int.of-string (Option.unwrap-or `0` (get-cross-reference `__footnote-ext:fig-num:`))
+  % レジスタの key を生成する．
+  let kFIGMAP fig-num           = `__footnote-ext:fig-map:` ^ String.of-int fig-num
+  let kFIGNUM                   = `__footnote-ext:fig-num:`
+  let kFOOTNOTEMAP footnote-num = `__footnote-ext:footnote-map:` ^ String.of-int footnote-num
+
+  let read-fig-num-max () =
+    Int.of-string (Option.unwrap-or `0` (get-cross-reference kFIGNUM))
 
 
   % レジスタ: `__footnote-ext:fig-map:<figure number> ----> <page number> <footnote number>`
@@ -68,7 +73,7 @@ let read-fig-num-max () =
     let-rec read-register acc fig-num =
       if fig-num-max < fig-num then acc
       else
-        match get-cross-reference (`__footnote-ext:fig-map:` ^ String.of-int fig-num) with
+        match get-cross-reference (kFIGMAP fig-num) with
         | Some (pageno-footno) -> (
            match split-on-spaces pageno-footno with
            | [pageno; footno] ->
@@ -149,7 +154,7 @@ let read-fig-num-max () =
   %   - 最初は figure がないと思うような実装にする．
   %     未定義の場合，default は常に true を返す．
   let is-no-more-fig footnote-num =
-    match get-cross-reference (`__footnote-ext:footnote-map:` ^ String.of-int footnote-num) with
+    match get-cross-reference (kFOOTNOTEMAP footnote-num) with
     | None -> true
     | Some(pageno) ->
         let pageno = Int.of-string pageno in
@@ -165,7 +170,7 @@ let read-fig-num-max () =
     hook-page-break (fun page _ -> (
       % 追加
       let () = register-cross-reference
-        (`__footnote-ext:footnote-map:` ^ String.of-int footnote-num)
+        (kFOOTNOTEMAP footnote-num)
         (String.of-int page#page-number)
       in
       let () =
@@ -214,7 +219,7 @@ let read-fig-num-max () =
     % - figure num の最大値をレジスタに記録しておく．
     let () =
       read-fig-num-max () |> Int.max fig-num |> String.of-int
-        |> register-cross-reference `__footnote-ext:fig-num:`
+        |> register-cross-reference kFIGNUM
     in
     let () = increment footnote-num-ref in
     let footnote-num = !footnote-num-ref in
@@ -227,7 +232,7 @@ let read-fig-num-max () =
       ((add-footnote fig-bb ++ hook-page-break (fun page _ -> (
         % レジスタに登録する．
         register-cross-reference
-          (`__footnote-ext:fig-map:` ^ String.of-int fig-num)
+          (kFIGMAP fig-num)
           (String.of-int (page#page-number) ^ #` `# ^ String.of-int footnote-num)
         ))) % ++ check-register label)
       ++ (if is-last-fig fig-num then flush-footnotes () else inline-nil))
@@ -279,7 +284,6 @@ let read-fig-num-max () =
       match get-cross-reference label with
       | Some(`T`) -> % このラベルが first-footnote の場合．
           let () = display-message (`'` ^ label ^ `': T`) in  % for debug
-          let () = display-message (`>>> first-footnote: ` ^ String.of-bool !first-footnote) in
           let bar-top-margin = size in
           let bar-bottom-margin = size *' 0.5 in
           let wid = get-text-width ctx *' bar-ratio in

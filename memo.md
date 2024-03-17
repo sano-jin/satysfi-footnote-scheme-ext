@@ -33,7 +33,7 @@ fswatch でファイルを監視する bash スクリプトを書いたので，
 fswatch をインストール済みであれば以下のようにして使うこともできる．
 
 ```bash
-./watch demo/paper.saty
+./watch paper.saty
 ```
 
 ## 実装方針
